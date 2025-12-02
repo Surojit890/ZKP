@@ -47,8 +47,8 @@ htmlcov/
 .env
 .env.local
 .env.*.local
-*.env
-.env.example
+# Keep .env.example - it's the template without secrets
+!.env.example
 
 # Logs
 *.log
