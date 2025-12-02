@@ -6,6 +6,7 @@ Flask application with proper Schnorr ZKP verification on Ed25519
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 from pymongo import MongoClient
+from dotenv import load_dotenv
 import os
 import nacl.bindings
 import nacl.utils
@@ -17,6 +18,9 @@ import json
 import re
 import html
 import urllib.parse
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -77,27 +81,28 @@ def validate_hex_string(value: str, expected_length: int = None) -> tuple:
 app = Flask(__name__)
 CORS(app)
 
-# MongoDB Connection
-MONGODB_URI = os.getenv(
-    'MONGODB_URI',
-    'mongodb+srv://admin:H9skGpb6jYa%2AMb%24@soujatya.gjxsm.mongodb.net'
-)
+# MongoDB Connection - Load from environment variable
+MONGODB_URI = os.getenv('MONGODB_URI')
+
+if not MONGODB_URI:
+    logger.warning("MONGODB_URI not set in environment. Using in-memory storage.")
 
 # In-memory storage (fallback)
 users_db = {}
 challenges_db = {}
 mongo_available = False
 
-try:
-    client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
-    client.admin.command('ping')
-    db = client['zkp_auth']
-    users_collection = db['users']
-    challenges_collection = db['challenges']
-    mongo_available = True
-    logger.info("Connected to MongoDB")
-except Exception as e:
-    logger.warning(f"Using in-memory storage: {e}")
+if MONGODB_URI:
+    try:
+        client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+        client.admin.command('ping')
+        db = client['zkp_auth']
+        users_collection = db['users']
+        challenges_collection = db['challenges']
+        mongo_available = True
+        logger.info("Connected to MongoDB")
+    except Exception as e:
+        logger.warning(f"Using in-memory storage: {e}")
 
 
 def get_user(username):
