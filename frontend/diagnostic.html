@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>libsodium Diagnostic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .box {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+        .status {
+            font-weight: bold;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .error { background: #ffebee; color: #c62828; }
+        .info { background: #e3f2fd; color: #1565c0; }
+    </style>
+</head>
+<body>
+    <h1>libsodium Diagnostic Test</h1>
+    
+    <div class="box">
+        <h2>Network Status</h2>
+        <div id="network-status" class="status info">Checking CDNs...</div>
+    </div>
+    
+    <div class="box">
+        <h2>libsodium Loading</h2>
+        <div id="sodium-status" class="status info">Waiting...</div>
+    </div>
+    
+    <div class="box">
+        <h2>Crypto Functions</h2>
+        <div id="crypto-status" class="status info">Checking...</div>
+    </div>
+    
+    <div class="box">
+        <h2>Logs</h2>
+        <pre id="logs" style="background: #f9f9f9; padding: 10px; border-radius: 3px; overflow: auto; max-height: 300px;"></pre>
+    </div>
+
+    <script>
+        const logsEl = document.getElementById('logs');
+        
+        function log(msg, type = 'info') {
+            console.log(`[${type}] ${msg}`);
+            logsEl.textContent += `[${type}] ${msg}\n`;
+            logsEl.scrollTop = logsEl.scrollHeight;
+        }
+        
+        // Test CDN connectivity
+        function testCDN(url, name) {
+            return fetch(url, { method: 'HEAD', mode: 'no-cors' })
+                .then(() => {
+                    log(`✓ ${name} is reachable`, 'success');
+                    return true;
+                })
+                .catch(() => {
+                    log(`✗ ${name} is NOT reachable`, 'error');
+                    return false;
+                });
+        }
+        
+        async function runTests() {
+            try {
+                // Test CDN
+                log('Testing CDN connectivity...');
+                await testCDN('https://cdn.jsdelivr.net/', 'jsdelivr.net');
+                await testCDN('https://unpkg.com/', 'unpkg.com');
+                
+                // Wait for sodium
+                log('Waiting for sodium to load...');
+                document.getElementById('network-status').innerHTML = '<span class="success">✓ Network OK</span>';
+                
+                let attempts = 0;
+                while (!window.sodium && attempts < 100) {
+                    log(`Attempt ${attempts + 1}: sodium not loaded yet...`);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (window.sodium) {
+                    log('✓ sodium object found!', 'success');
+                    document.getElementById('sodium-status').innerHTML = '<span class="success">✓ libsodium loaded</span>';
+                    
+                    // Wait for ready
+                    log('Waiting for sodium.ready...');
+                    await sodium.ready;
+                    log('✓ sodium.ready resolved', 'success');
+                    
+                    // Check functions
+                    const functions = [
+                        'crypto_pwhash',
+                        'crypto_sign_seed_keypair',
+                        'crypto_scalarmult_base',
+                        'randombytes',
+                        'crypto_hash_sha256'
+                    ];
+                    
+                    let allOk = true;
+                    for (const func of functions) {
+                        if (typeof sodium[func] === 'function') {
+                            log(`✓ sodium.${func}() available`, 'success');
+                        } else {
+                            log(`✗ sodium.${func}() NOT available`, 'error');
+                            allOk = false;
+                        }
+                    }
+                    
+                    if (allOk) {
+                        document.getElementById('crypto-status').innerHTML = '<span class="success">✓ All crypto functions available</span>';
+                        log('========================================', 'success');
+                        log('✓ All tests passed! System is ready.', 'success');
+                        log('========================================', 'success');
+                    }
+                } else {
+                    log('✗ sodium failed to load after 10 seconds', 'error');
+                    document.getElementById('sodium-status').innerHTML = '<span class="error">✗ libsodium failed to load</span>';
+                }
+            } catch (err) {
+                log(`✗ Error: ${err.message}`, 'error');
+                document.getElementById('crypto-status').innerHTML = '<span class="error">✗ Error during testing</span>';
+            }
+        }
+        
+        // Start tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+    
+    <!-- Try to load libsodium -->
+    <script async src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/sodium.min.js"></script>
+</body>
+</html>

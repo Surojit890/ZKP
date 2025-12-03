@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZKP Authentication</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="split-container">
+        <!-- Left Side - Authentication -->
+        <div class="left-panel">
+            <div class="auth-container">
+                <!-- Header -->
+                <div class="header">
+                    <div class="logo">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                            <circle cx="20" cy="20" r="18" stroke="url(#gradient)" stroke-width="2" />
+                            <path d="M20 10V20L26 26" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" />
+                            <defs>
+                                <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
+                                    <stop offset="0%" stop-color="#667eea" />
+                                    <stop offset="100%" stop-color="#764ba2" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h1>Zero-Knowledge Authentication</h1>
+                    <p class="subtitle">Secure login without passwords</p>
+                </div>
+
+                <!-- Navigation -->
+                <div class="nav-buttons">
+                    <button onclick="showTab('register')" class="nav-btn active" id="nav-register">
+                        <span>Register</span>
+                    </button>
+                    <button onclick="showTab('login')" class="nav-btn" id="nav-login">
+                        <span>Login</span>
+                    </button>
+                </div>
+
+                <!-- Status Messages -->
+                <div id="status" class="status-message"></div>
+
+                <!-- Register Tab -->
+                <div id="register" class="tab-content active">
+                    <form onsubmit="handleRegister(event)">
+                        <div class="form-group">
+                            <label for="reg-username">Username</label>
+                            <input type="text" id="reg-username" name="username" required minlength="3"
+                                placeholder="Enter your username">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-password">Password</label>
+                            <input type="password" id="reg-password" name="password" required minlength="8"
+                                placeholder="At least 8 characters">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-password-confirm">Confirm Password</label>
+                            <input type="password" id="reg-password-confirm" name="password-confirm" required
+                                placeholder="Re-enter your password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <span>Create Account</span>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M4 10H16M16 10L12 6M16 10L12 14" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Login Tab -->
+                <div id="login" class="tab-content">
+                    <form onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label for="login-username">Username</label>
+                            <input type="text" id="login-username" name="username" required
+                                placeholder="Enter your username">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" name="password" required
+                                placeholder="Enter your password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <span>Sign In</span>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M4 10H16M16 10L12 6M16 10L12 14" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Footer -->
+                <div class="footer">
+                    <p id="status-info">Initializing cryptographic library...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side - Logs -->
+        <div class="right-panel">
+            <div class="logs-container">
+                <div class="logs-header">
+                    <h2>Activity Logs</h2>
+                    <button onclick="clearLogs()" class="clear-btn">Clear</button>
+                </div>
+
+                <div class="logs-tabs">
+                    <button onclick="showLogTab('register')" class="log-tab-btn active"
+                        id="log-tab-register">Registration</button>
+                    <button onclick="showLogTab('login')" class="log-tab-btn" id="log-tab-login">Login</button>
+                </div>
+
+                <div id="register-debug" class="debug-info active-log"></div>
+                <div id="login-debug" class="debug-info"></div>
+
+                <div class="logs-footer">
+                    <span class="log-count">0 events</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load libsodium WASM - Local copy -->
+    <script src="sodium.js" defer></script>
+    <script src="zkp-auth.js" defer></script>
+    <script>
+        function clearLogs() {
+            document.getElementById('register-debug').innerHTML = '';
+            document.getElementById('login-debug').innerHTML = '';
+            updateLogCount();
+        }
+
+        function showLogTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.log-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('log-tab-' + tab).classList.add('active');
+
+            // Update log panels
+            document.querySelectorAll('.debug-info').forEach(panel => panel.classList.remove('active-log'));
+            document.getElementById(tab + '-debug').classList.add('active-log');
+        }
+
+        function updateLogCount() {
+            const registerLogs = document.getElementById('register-debug').children.length;
+            const loginLogs = document.getElementById('login-debug').children.length;
+            const total = registerLogs + loginLogs;
+            document.querySelector('.log-count').textContent = `${total} event${total !== 1 ? 's' : ''}`;
+        }
+
+        // Update log count when logs change
+        const observer = new MutationObserver(updateLogCount);
+        observer.observe(document.getElementById('register-debug'), { childList: true });
+        observer.observe(document.getElementById('login-debug'), { childList: true });
+    </script>
+</body>
+
+</html>
