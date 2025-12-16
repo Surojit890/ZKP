@@ -119,9 +119,9 @@ class ReplayAttackTestSuite:
             
             print(f"  Result 1: {result1_status}")
             if result1_status == 200:
-                print(f"  ✅ First attempt succeeded")
+                print(f"   First attempt succeeded")
             else:
-                print(f"  ❌ First attempt failed: {result1_body}")
+                print(f"  First attempt failed: {result1_body}")
             
             # Replay SAME proof immediately with SAME challenge
             print(f"  Replaying same proof immediately (attempt 2)...")
@@ -137,10 +137,10 @@ class ReplayAttackTestSuite:
             
             print(f"  Result 2: {result2_status}")
             if result2_status == 200:
-                print(f"  ⚠️  Replay succeeded - VULNERABLE!")
+                print(f"    Replay succeeded - VULNERABLE!")
                 vulnerable = True
             else:
-                print(f"  ✅ Replay rejected - PROTECTED")
+                print(f"   Replay rejected - PROTECTED")
                 vulnerable = False
             
             # Store captured proof
@@ -170,7 +170,7 @@ class ReplayAttackTestSuite:
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_proof_replay_different_challenge(self) -> ReplayTestResult:
@@ -243,9 +243,9 @@ class ReplayAttackTestSuite:
             
             print(f"  Result: {verify2.status_code}")
             if vulnerable:
-                print(f"  ⚠️  Replay succeeded - VULNERABLE!")
+                print(f"    Replay succeeded - VULNERABLE!")
             else:
-                print(f"  ✅ Replay rejected - PROTECTED")
+                print(f"   Replay rejected - PROTECTED")
             
             # Store data
             self.captured_proofs['diff_challenge'] = {
@@ -275,7 +275,7 @@ class ReplayAttackTestSuite:
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_proof_replay_time_delayed(self) -> ReplayTestResult:
@@ -383,7 +383,7 @@ class ReplayAttackTestSuite:
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_proof_replay_session_reuse(self) -> ReplayTestResult:
@@ -463,7 +463,7 @@ class ReplayAttackTestSuite:
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_challenge_replay(self) -> ReplayTestResult:
@@ -521,9 +521,9 @@ class ReplayAttackTestSuite:
             print(f"  Repeated: {total_challenges - unique_challenges}")
             
             if vulnerable:
-                print(f"  ⚠️  Challenge reuse detected - VULNERABLE!")
+                print(f"    Challenge reuse detected - VULNERABLE!")
             else:
-                print(f"  ✅ All challenges unique - PROTECTED")
+                print(f"   All challenges unique - PROTECTED")
             
             result = ReplayTestResult(
                 test_name="Challenge Replay",
@@ -543,7 +543,7 @@ class ReplayAttackTestSuite:
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_partial_proof_replay(self) -> ReplayTestResult:
@@ -638,9 +638,9 @@ class ReplayAttackTestSuite:
             print(f"  Modified r: {resp_r.status_code} (works: {r_works})")
             
             if vulnerable:
-                print(f"  ⚠️  Partial proof accepted - VULNERABLE!")
+                print(f"    Partial proof accepted - VULNERABLE!")
             else:
-                print(f"  ✅ All partial proofs rejected - PROTECTED")
+                print(f"   All partial proofs rejected - PROTECTED")
             
             result = ReplayTestResult(
                 test_name="Partial Proof Replay",
@@ -661,7 +661,7 @@ class ReplayAttackTestSuite:
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_concurrent_replay(self) -> ReplayTestResult:
@@ -718,9 +718,9 @@ class ReplayAttackTestSuite:
             vulnerable = len(successful) > 0
             
             if vulnerable:
-                print(f"  ⚠️  Concurrent replay succeeded ({len(successful)}/{len(results)}) - VULNERABLE!")
+                print(f"    Concurrent replay succeeded ({len(successful)}/{len(results)}) - VULNERABLE!")
             else:
-                print(f"  ✅ All concurrent attempts rejected - PROTECTED")
+                print(f"   All concurrent attempts rejected - PROTECTED")
             
             result = ReplayTestResult(
                 test_name="Concurrent Replay Attacks",
@@ -741,7 +741,7 @@ class ReplayAttackTestSuite:
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_replay_with_modified_username(self) -> ReplayTestResult:
@@ -816,9 +816,9 @@ class ReplayAttackTestSuite:
             print(f"  Result for {username2}: {verify2.status_code}")
             
             if vulnerable:
-                print(f"  ⚠️  Username substitution worked - VULNERABLE!")
+                print(f"    Username substitution worked - VULNERABLE!")
             else:
-                print(f"  ✅ Username substitution blocked - PROTECTED")
+                print(f"   Username substitution blocked - PROTECTED")
             
             result = ReplayTestResult(
                 test_name="Replay with Different Username",
@@ -838,7 +838,7 @@ class ReplayAttackTestSuite:
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def print_summary(self):
@@ -856,14 +856,14 @@ class ReplayAttackTestSuite:
         protected = total - vulnerable
         
         print(f"\nTotal Tests: {total}")
-        print(f"✅ Protected: {protected}/{total}")
-        print(f"⚠️  Vulnerable: {vulnerable}/{total}")
+        print(f" Protected: {protected}/{total}")
+        print(f"  Vulnerable: {vulnerable}/{total}")
         print(f"Success Rate: {protected}/{total} = {(protected/total)*100:.0f}%")
         
         print(f"\n{'Test Name':<40} {'Status':<15} {'Severity':<10}")
         print("-" * 65)
         for result in self.results:
-            status = "⚠️  VULNERABLE" if result.vulnerable else "✅ PROTECTED"
+            status = "  VULNERABLE" if result.vulnerable else " PROTECTED"
             print(f"{result.test_name:<40} {status:<15} {result.severity:<10}")
         
         print("\n" + "="*80)
@@ -872,13 +872,13 @@ class ReplayAttackTestSuite:
         
         vulnerable_tests = [r for r in self.results if r.vulnerable]
         if vulnerable_tests:
-            print("\n⚠️  Vulnerabilities Found:")
+            print("\n  Vulnerabilities Found:")
             for test in vulnerable_tests:
                 print(f"\n  {test.test_name}")
                 print(f"  Severity: {test.severity}")
                 print(f"  Mitigation: {test.mitigation}")
         else:
-            print("\n✅ No replay attack vulnerabilities detected!")
+            print("\n No replay attack vulnerabilities detected!")
             print("   Current design with fresh challenges per auth session")
             print("   provides adequate replay protection.")
 

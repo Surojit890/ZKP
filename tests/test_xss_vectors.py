@@ -26,7 +26,7 @@ class XSSTestResult:
         self.error = None
     
     def __str__(self):
-        status = "✅ PASS" if not self.payload_reflected else "❌ FAIL"
+        status = " PASS" if not self.payload_reflected else " FAIL"
         return f"{status} | {self.vector_name:<40} | Payload reflected: {self.payload_reflected}"
 
 # XSS Test Payloads
@@ -88,16 +88,16 @@ class XSSSecurityTester:
                 # Check if payload appears in response
                 if payload in response.text:
                     result.payload_reflected = True
-                    print(f"  ❌ FAIL: Payload reflected in response")
+                    print(f"   FAIL: Payload reflected in response")
                     print(f"     Payload: {payload[:60]}...")
                     print(f"     Status: {response.status_code}")
                 else:
                     result.payload_reflected = False
-                    print(f"  ✅ PASS: Payload NOT reflected")
+                    print(f"   PASS: Payload NOT reflected")
                 
             except Exception as e:
                 result.error = str(e)
-                print(f"  ⚠️  ERROR: {str(e)}")
+                print(f"   ERROR: {str(e)}")
             
             test_results.append(result)
             self.results.append(result)
@@ -133,14 +133,14 @@ class XSSSecurityTester:
                 
                 if payload in response.text:
                     result.payload_reflected = True
-                    print(f"  ❌ FAIL: Payload reflected")
+                    print(f"   FAIL: Payload reflected")
                 else:
                     result.payload_reflected = False
-                    print(f"  ✅ PASS: Payload filtered")
+                    print(f"   PASS: Payload filtered")
                 
             except Exception as e:
                 result.error = str(e)
-                print(f"  ⚠️  ERROR: {str(e)}")
+                print(f"   ERROR: {str(e)}")
             
             test_results.append(result)
             self.results.append(result)
@@ -187,10 +187,10 @@ class XSSSecurityTester:
                     
                     if payload in response.text:
                         result.payload_reflected = True
-                        print(f"  ❌ FAIL: {param_name} payload reflected")
+                        print(f"   FAIL: {param_name} payload reflected")
                     else:
                         result.payload_reflected = False
-                        print(f"  ✅ PASS: {param_name} payload filtered")
+                        print(f"   PASS: {param_name} payload filtered")
                     
                 except Exception as e:
                     result.error = str(e)
@@ -221,16 +221,16 @@ class XSSSecurityTester:
             for header in critical_headers:
                 if header in headers:
                     header_status[header] = headers[header]
-                    print(f"  ✅ {header}: Present")
+                    print(f"   {header}: Present")
                     print(f"     Value: {headers[header][:60]}...")
                 else:
                     header_status[header] = "MISSING"
-                    print(f"  ❌ {header}: MISSING")
+                    print(f"   {header}: MISSING")
             
             return header_status
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"   ERROR: {str(e)}")
             return {}
     
     def test_input_validation(self) -> List[Tuple[str, bool]]:
@@ -250,13 +250,13 @@ class XSSSecurityTester:
                 timeout=5
             )
             if response.status_code >= 400:
-                print(f"    ✅ PASS: Short username rejected (status {response.status_code})")
+                print(f"     PASS: Short username rejected (status {response.status_code})")
                 validation_tests.append(("Min username length", True))
             else:
-                print(f"    ❌ FAIL: Short username accepted")
+                print(f"     FAIL: Short username accepted")
                 validation_tests.append(("Min username length", False))
         except Exception as e:
-            print(f"    ⚠️  ERROR: {str(e)}")
+            print(f"     ERROR: {str(e)}")
         
         # Test invalid public key format
         print("\n  Testing invalid public key format...")
@@ -267,13 +267,13 @@ class XSSSecurityTester:
                 timeout=5
             )
             if response.status_code >= 400:
-                print(f"    ✅ PASS: Invalid pubkey rejected (status {response.status_code})")
+                print(f"     PASS: Invalid pubkey rejected (status {response.status_code})")
                 validation_tests.append(("Invalid pubkey format", True))
             else:
-                print(f"    ❌ FAIL: Invalid pubkey accepted")
+                print(f"     FAIL: Invalid pubkey accepted")
                 validation_tests.append(("Invalid pubkey format", False))
         except Exception as e:
-            print(f"    ⚠️  ERROR: {str(e)}")
+            print(f"     ERROR: {str(e)}")
         
         # Test non-JSON request
         print("\n  Testing non-JSON request...")
@@ -285,13 +285,13 @@ class XSSSecurityTester:
                 timeout=5
             )
             if response.status_code >= 400:
-                print(f"    ✅ PASS: Non-JSON rejected (status {response.status_code})")
+                print(f"     PASS: Non-JSON rejected (status {response.status_code})")
                 validation_tests.append(("Non-JSON request", True))
             else:
-                print(f"    ❌ FAIL: Non-JSON accepted")
+                print(f"     FAIL: Non-JSON accepted")
                 validation_tests.append(("Non-JSON request", False))
         except Exception as e:
-            print(f"    ⚠️  ERROR: {str(e)}")
+            print(f"     ERROR: {str(e)}")
         
         return validation_tests
     
@@ -314,7 +314,7 @@ class XSSSecurityTester:
             self.test_input_validation()
             
         except requests.exceptions.ConnectionError:
-            print("\n❌ ERROR: Cannot connect to backend at {self.backend_url}")
+            print("\n ERROR: Cannot connect to backend at {self.backend_url}")
             print("   Make sure the Flask server is running: python app_final.py")
             sys.exit(1)
     
@@ -329,18 +329,18 @@ class XSSSecurityTester:
         passed = total - failed
         
         print(f"\nTotal Tests: {total}")
-        print(f"Passed (Safe):     {passed} ✅")
-        print(f"Failed (Unsafe):   {failed} ❌")
+        print(f"Passed (Safe):     {passed} ")
+        print(f"Failed (Unsafe):   {failed} ")
         print(f"Success Rate:      {(passed/total*100):.1f}%")
         
         if failed > 0:
-            print(f"\n⚠️  WARNING: {failed} vulnerabilities detected!")
+            print(f"\  WARNING: {failed} vulnerabilities detected!")
             print("\nFailed Tests:")
             for result in self.results:
                 if result.payload_reflected:
                     print(f"  - {result}")
         else:
-            print("\n✅ All tests passed! No XSS vulnerabilities detected.")
+            print("\n All tests passed! No XSS vulnerabilities detected.")
         
         print("\n" + "="*80)
 

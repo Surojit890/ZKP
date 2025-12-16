@@ -10,7 +10,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 BACKEND_PATH = PROJECT_ROOT / 'backend'
 
-# pytest options
+# pytest options - Registers custom pytest markers: @integration - marks tests as integration tests @unit - marks tests as unit tests
 def pytest_configure(config):
     config.addinivalue_line(
         "markers", "integration: mark test as integration test"
