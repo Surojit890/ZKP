@@ -848,7 +848,7 @@ class ReplayAttackTestSuite:
         print("="*80)
         
         if not self.results:
-            print("❌ No tests completed")
+            print(" No tests completed")
             return
         
         total = len(self.results)
