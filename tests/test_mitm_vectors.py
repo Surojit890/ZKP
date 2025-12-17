@@ -83,15 +83,15 @@ class MITMTestSuite:
             self.results.append(result)
             
             if vulnerable:
-                print("  ❌ VULNERABLE: HTTP traffic is unencrypted and readable")
+                print("   VULNERABLE: HTTP traffic is unencrypted and readable")
                 print(f"     Severity: {result.severity}")
             else:
-                print("  ✅ PROTECTED: Traffic is encrypted")
+                print("  PROTECTED: Traffic is encrypted")
             
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_authentication_proof_tampering(self) -> MITMTestResult:
@@ -152,15 +152,15 @@ class MITMTestSuite:
             self.results.append(result)
             
             if vulnerable:
-                print("  ❌ VULNERABLE: Tampered proof was accepted!")
+                print("   VULNERABLE: Tampered proof was accepted!")
             else:
-                print("  ✅ PROTECTED: Tampered proof was rejected")
+                print("  PROTECTED: Tampered proof was rejected")
                 print(f"     Reason: {response_json.get('error', 'Invalid proof')}")
             
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_session_token_hijacking(self) -> MITMTestResult:
@@ -241,14 +241,14 @@ class MITMTestSuite:
                     self.results.append(result)
                     
                     if vulnerable:
-                        print("  ⚠️  WARNING: Token captured and stored by attacker")
+                        print("    WARNING: Token captured and stored by attacker")
                     else:
-                        print("  ✅ PROTECTED: No token present in response")
+                        print("  PROTECTED: No token present in response")
                     
                     return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
         
         return None
     
@@ -313,15 +313,15 @@ class MITMTestSuite:
             self.results.append(result)
             
             if vulnerable:
-                print("  ❌ VULNERABLE: Injected content would execute")
+                print("   VULNERABLE: Injected content would execute")
             else:
-                print("  ✅ PROTECTED: Injected content cannot execute")
+                print("  PROTECTED: Injected content cannot execute")
                 print("     Reason: Frontend uses textContent (safe rendering)")
             
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_replay_attack_detection(self) -> MITMTestResult:
@@ -409,14 +409,14 @@ class MITMTestSuite:
             self.results.append(result)
             
             if vulnerable:
-                print("  ⚠️  VULNERABLE: Replay attack succeeded!")
+                print("    VULNERABLE: Replay attack succeeded!")
             else:
-                print("  ✅ PROTECTED: Replay attack prevented")
+                print("  PROTECTED: Replay attack prevented")
             
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def test_request_injection(self) -> MITMTestResult:
@@ -508,9 +508,9 @@ class MITMTestSuite:
             missing = []
             for header, purpose in required_headers.items():
                 if header in headers:
-                    print(f"  ✅ {header}: {headers[header][:50]}...")
+                    print(f"  {header}: {headers[header][:50]}...")
                 else:
-                    print(f"  ❌ {header}: MISSING")
+                    print(f"   {header}: MISSING")
                     missing.append(header)
             
             vulnerable = len(missing) > 0
@@ -531,14 +531,14 @@ class MITMTestSuite:
             self.results.append(result)
             
             if vulnerable:
-                print(f"\n  ⚠️  WARNING: {len(missing)} security headers missing")
+                print(f"\n    WARNING: {len(missing)} security headers missing")
             else:
-                print("\n  ✅ All critical security headers present")
+                print("\n  All critical security headers present")
             
             return result
             
         except Exception as e:
-            print(f"  ⚠️  ERROR: {str(e)}")
+            print(f"    ERROR: {str(e)}")
             return None
     
     def run_all_tests(self):
@@ -561,7 +561,7 @@ class MITMTestSuite:
             self.test_security_headers()
             
         except requests.exceptions.ConnectionError:
-            print(f"\n❌ ERROR: Cannot connect to backend at {self.backend_url}")
+            print(f"\n ERROR: Cannot connect to backend at {self.backend_url}")
             print("   Make sure Flask server is running: python app_final.py")
     
     def print_summary(self):
@@ -582,7 +582,7 @@ class MITMTestSuite:
         print("-"*80 + "\n")
         
         for result in self.results:
-            status = "❌ VULNERABLE" if result.vulnerable else "✅ PROTECTED"
+            status = " VULNERABLE" if result.vulnerable else "PROTECTED"
             print(f"{status} | {result.test_name}")
             print(f"  Attack Vector: {result.attack_vector}")
             print(f"  Severity: {result.severity}")
@@ -598,12 +598,12 @@ class MITMTestSuite:
         medium_severity = [r for r in self.results if r.severity == "MEDIUM" and r.vulnerable]
         
         if high_severity:
-            print(f"\n🔴 HIGH PRIORITY ({len(high_severity)}):")
+            print(f"\n  HIGH PRIORITY ({len(high_severity)}):")
             for r in high_severity:
                 print(f"  - {r.test_name}: {r.mitigation}")
         
         if medium_severity:
-            print(f"\n🟡 MEDIUM PRIORITY ({len(medium_severity)}):")
+            print(f"\n  MEDIUM PRIORITY ({len(medium_severity)}):")
             for r in medium_severity:
                 print(f"  - {r.test_name}: {r.mitigation}")
         
@@ -611,7 +611,7 @@ class MITMTestSuite:
         
         # Overall rating
         if vulnerable == 0:
-            rating = "🔒 EXCELLENT"
+            rating = " EXCELLENT"
         elif vulnerable == 1:
             rating = "GOOD"
         elif vulnerable <= 3:
@@ -620,7 +620,7 @@ class MITMTestSuite:
             rating = "POOR"
         
         print(f"\nOVERALL SECURITY RATING: {rating}")
-        print(f"Production Ready: {'✅ YES (with HTTPS)' if vulnerable <= 2 else '❌ NO (needs hardening)'}")
+        print(f"Production Ready: {'YES (with HTTPS)' if vulnerable <= 2 else ' NO (needs hardening)'}")
 
 
 def main():
