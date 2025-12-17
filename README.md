@@ -106,11 +106,6 @@ cd backend
 pip install -r requirements.txt
 ```
 
-Set environment variable:
-```bash
-$env:MONGODB_URI="mongodb+srv://admin:H9skGpb6jYa%2AMb%24@soujatya.gjxsm.mongodb.net"
-```
-
 Run the server:
 ```bash
 python app_final.py

@@ -1,67 +1,101 @@
 /**
  * ZKP Authentication Client
  * Implements Schnorr ZKP on Ed25519 using libsodium
+ *
+ * Note: `index.html` calls `showTab`, `handleRegister`, and `handleLogin` directly.
+ * This file intentionally keeps those functions on `window` for compatibility.
  */
 
-// UI State Management
-function showTab(tabId) {
-    // Hide all tabs
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
+(function () {
+    'use strict';
 
-    // Show selected tab
-    document.getElementById(tabId).classList.add('active');
-    document.getElementById(`nav-${tabId}`).classList.add('active');
+    // ----------------------------
+    // Configuration + state
+    // ----------------------------
+    const API_BASE_URL = 'http://localhost:5000';
+    let sodium = null;
 
-    // Clear messages
-    document.getElementById('status').textContent = '';
-    document.getElementById('status').className = 'status-message';
-}
+    const dom = {
+        status: () => document.getElementById('status'),
+        statusInfo: () => document.getElementById('status-info'),
+        tabContent: () => document.querySelectorAll('.tab-content'),
+        navButtons: () => document.querySelectorAll('.nav-btn'),
+        tab: (tabId) => document.getElementById(tabId),
+        navBtn: (tabId) => document.getElementById(`nav-${tabId}`),
+        debugArea: (area) => document.getElementById(`${area}-debug`)
+    };
 
-function showStatus(message, type = 'info') {
-    const statusEl = document.getElementById('status');
-    statusEl.textContent = message;
-    statusEl.className = `status-message ${type}`;
-}
+    // ----------------------------
+    // UI helpers
+    // ----------------------------
+    function showTab(tabId, options = {}) {
+        dom.tabContent().forEach(tab => tab.classList.remove('active'));
+        dom.navButtons().forEach(btn => btn.classList.remove('active'));
 
-function debug(area, message) {
-    const debugEl = document.getElementById(`${area}-debug`);
-    if (debugEl) {
-        const line = document.createElement('div');
-        line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-        debugEl.appendChild(line);
-        debugEl.scrollTop = debugEl.scrollHeight;
+        dom.tab(tabId).classList.add('active');
+        dom.navBtn(tabId).classList.add('active');
+
+        const statusEl = dom.status();
+        statusEl.textContent = '';
+        statusEl.className = 'status-message';
+
+        const syncLogs = options.syncLogs !== false;
+        if (syncLogs && typeof window.showLogTab === 'function') {
+            if (!window.__tabSyncGuard) {
+                window.__tabSyncGuard = true;
+                try {
+                    window.showLogTab(tabId, { syncAuth: false });
+                } finally {
+                    window.__tabSyncGuard = false;
+                }
+            }
+        }
     }
-    console.log(`[${area}] ${message}`);
-}
 
-// Crypto Functions
-const API_BASE_URL = 'http://localhost:5000';
-let sodium;
-
-async function initSodium() {
-    try {
-        await sodium.ready;
-        document.getElementById('status-info').textContent = 'Libsodium initialized successfully';
-        console.log('Libsodium ready');
-    } catch (e) {
-        document.getElementById('status-info').textContent = 'Error initializing libsodium';
-        console.error(e);
-        showStatus('Failed to load cryptographic library', 'error');
+    function showStatus(message, type = 'info') {
+        const statusEl = dom.status();
+        statusEl.textContent = message;
+        statusEl.className = `status-message ${type}`;
     }
-}
 
-// Initialize when window loads
-window.onload = async function () {
-    if (window.sodium) {
-        sodium = window.sodium;
-        await initSodium();
-    } else {
-        // Wait for script to load
+    function debug(area, message, level = 'info') {
+        const debugEl = dom.debugArea(area);
+        if (debugEl) {
+            const line = document.createElement('div');
+            line.classList.add('log-line');
+            if (level) {
+                line.classList.add(level);
+            }
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugEl.appendChild(line);
+            debugEl.scrollTop = debugEl.scrollHeight;
+        }
+        console.log(`[${area}] ${level}: ${message}`);
+    }
+
+    // ----------------------------
+    // libsodium initialization
+    // ----------------------------
+    async function initSodium() {
+        try {
+            await sodium.ready;
+            dom.statusInfo().textContent = 'Libsodium initialized successfully';
+            console.log('Libsodium ready');
+        } catch (e) {
+            dom.statusInfo().textContent = 'Error initializing libsodium';
+            console.error(e);
+            showStatus('Failed to load cryptographic library', 'error');
+        }
+    }
+
+    async function boot() {
+        if (window.sodium) {
+            sodium = window.sodium;
+            await initSodium();
+            return;
+        }
+
+        // Wait for script to load (same behavior as before: one retry after 1s)
         setTimeout(async () => {
             if (window.sodium) {
                 sodium = window.sodium;
@@ -71,178 +105,198 @@ window.onload = async function () {
             }
         }, 1000);
     }
-};
 
-async function derivePrivateKey(username, password) {
-    // 1. Create salt from username (deterministic)
-    const saltInput = username + "_salt";
-    // Use SHA-256 if available, otherwise SHA-512 (crypto_hash)
-    const hashFunction = sodium.crypto_hash_sha256 ? sodium.crypto_hash_sha256 : sodium.crypto_hash;
-    const saltHash = hashFunction(sodium.from_string(saltInput));
-    const salt = saltHash.slice(0, 16); // First 16 bytes for Argon2 salt
+    // Initialize when window loads
+    window.onload = boot;
 
-    // 2. Derive key using Argon2 (via crypto_pwhash)
-    // Output: 32 bytes (Ed25519 seed)
-    const privateKey = sodium.crypto_pwhash(
-        32,                             // Output length
-        sodium.from_string(password),   // Password
-        salt,                           // Salt
-        sodium.crypto_pwhash_OPSLIMIT_MODERATE,
-        sodium.crypto_pwhash_MEMLIMIT_MODERATE,
-        sodium.crypto_pwhash_ALG_DEFAULT
-    );
-
-    return privateKey;
-}
-
-async function handleRegister(event) {
-    event.preventDefault();
-    const form = event.target;
-    const username = form.username.value;
-    const password = form.password.value;
-    const confirm = form['password-confirm'].value;
-
-    if (password !== confirm) {
-        showStatus('Passwords do not match', 'error');
-        return;
+    function requireSodium() {
+        if (!sodium) {
+            throw new Error('Cryptographic library not initialized yet');
+        }
+        return sodium;
     }
 
-    try {
-        showStatus('Generating keys...', 'info');
-        debug('register', 'Deriving private key...');
-
-        const privateKey = await derivePrivateKey(username, password);
-
-        // Generate public key
-        const keyPair = sodium.crypto_sign_seed_keypair(privateKey);
-        const publicKey = sodium.to_hex(keyPair.publicKey);
-
-        debug('register', `Public Key: ${publicKey.substring(0, 16)}...`);
-
-        // Send to server
-        const response = await fetch(`${API_BASE_URL}/api/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: username,
-                public_key: publicKey
-            })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            showStatus('Registration successful! You can now login.', 'success');
-            form.reset();
-            setTimeout(() => showTab('login'), 1500);
-        } else {
-            showStatus(`Registration failed: ${data.error}`, 'error');
-        }
-
-    } catch (e) {
-        console.error(e);
-        showStatus(`Error: ${e.message}`, 'error');
+    // ----------------------------
+    // Crypto helpers
+    // ----------------------------
+    function clampEd25519Scalar(bytes32) {
+        const out = bytes32.slice(0, 32);
+        out[0] &= 248;
+        out[31] &= 127;
+        out[31] |= 64;
+        return out;
     }
-}
 
-async function handleLogin(event) {
-    event.preventDefault();
-    const form = event.target;
-    const username = form.username.value;
-    const password = form.password.value;
+    async function derivePrivateKey(username, password) {
+        const s = requireSodium();
 
-    try {
-        showStatus('Starting authentication...', 'info');
-        debug('login', 'Requesting challenge...');
+        // 1. Create salt from username (deterministic)
+        const saltInput = `${username}_salt`;
+        const hashFunction = s.crypto_hash_sha256 ? s.crypto_hash_sha256 : s.crypto_hash;
+        const saltHash = hashFunction(s.from_string(saltInput));
+        const salt = saltHash.slice(0, 16); // First 16 bytes for Argon2 salt
 
-        // 1. Get Challenge
-        const challengeRes = await fetch(`${API_BASE_URL}/api/auth/challenge`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username })
-        });
+        // 2. Derive key using Argon2 (via crypto_pwhash)
+        // Output: 32 bytes (Ed25519 seed)
+        return s.crypto_pwhash(
+            32,
+            s.from_string(password),
+            salt,
+            s.crypto_pwhash_OPSLIMIT_MODERATE,
+            s.crypto_pwhash_MEMLIMIT_MODERATE,
+            s.crypto_pwhash_ALG_DEFAULT
+        );
+    }
 
-        const challengeData = await challengeRes.json();
+    function computeProof(privateKeySeed, challengeHex) {
+        const s = requireSodium();
 
-        if (!challengeRes.ok) {
-            throw new Error(challengeData.error || 'Failed to get challenge');
-        }
+        // Generate random nonce seed, then use it to produce a valid Ed25519 point V
+        const vSeed = s.randombytes_buf(32);
+        const Vpair = s.crypto_sign_seed_keypair(vSeed);
+        const Vhex = s.to_hex(Vpair.publicKey);
 
-        const challengeHex = challengeData.challenge;
-        debug('login', `Challenge: ${challengeHex.substring(0, 16)}...`);
+        // Derive scalar v from seed (Ed25519 seed hashing + clamping)
+        const v = clampEd25519Scalar(s.crypto_hash_sha512(vSeed).slice(0, 32));
 
-        // 2. Compute ZKP
-        debug('login', 'Computing Zero-Knowledge Proof...');
+        // Parse challenge scalar c
+        const c = s.from_hex(challengeHex);
 
-        const privateKey = await derivePrivateKey(username, password);
-
-        // Clamp private key (a)
-        // or rely on libsodium if it exposes scalar arithmetic.
-        // libsodium.js exposes `crypto_core_ed25519_scalar_sub` etc.
-
-        // Generate random nonce (v)
-        // We use a seed to generate an Ed25519 point V = [v]G
-        // This ensures V is a valid Ed25519 point.
-        const v_seed = sodium.randombytes_buf(32);
-        const V_pair = sodium.crypto_sign_seed_keypair(v_seed);
-        const V = V_pair.publicKey;
-        const V_hex = sodium.to_hex(V);
-
-        // Derive scalar v from seed (same logic as private key)
-        const h_v = sodium.crypto_hash_sha512(v_seed);
-        const v = h_v.slice(0, 32);
-        v[0] &= 248;
-        v[31] &= 127;
-        v[31] |= 64;
-
-        // Parse challenge (c)
-        const c = sodium.from_hex(challengeHex);
-
-        // a = clamped private key
-        // We need to derive the scalar 'a' from the seed 'privateKey'
-        // Ed25519 private key is H(seed)[:32] with clamping
-        const h = sodium.crypto_hash_sha512(privateKey);
-        const a_bytes = h.slice(0, 32);
-        a_bytes[0] &= 248;
-        a_bytes[31] &= 127;
-        a_bytes[31] |= 64;
+        // Derive scalar a from private key seed (Ed25519: H(seed)[:32] with clamping)
+        const a = clampEd25519Scalar(s.crypto_hash_sha512(privateKeySeed).slice(0, 32));
 
         // r = v - c*a
-        // We use crypto_core_ed25519_scalar_* functions
+        const ca = s.crypto_core_ed25519_scalar_mul(c, a);
+        const r = s.crypto_core_ed25519_scalar_sub(v, ca);
+        const rHex = s.to_hex(r);
 
-        // c * a
-        const ca = sodium.crypto_core_ed25519_scalar_mul(c, a_bytes);
+        return { Vhex, rHex };
+    }
 
-        // v - ca
-        const r = sodium.crypto_core_ed25519_scalar_sub(v, ca);
-        const r_hex = sodium.to_hex(r);
-
-        debug('login', 'Proof computed. Sending to server...');
-
-        // 3. Verify
-        const verifyRes = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+    // ----------------------------
+    // Network helpers
+    // ----------------------------
+    async function postJson(path, body) {
+        const response = await fetch(`${API_BASE_URL}${path}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: username,
-                V: V_hex,
-                c: challengeHex,
-                r: r_hex
-            })
+            body: JSON.stringify(body)
         });
 
-        const verifyData = await verifyRes.json();
+        let data = null;
+        try {
+            data = await response.json();
+        } catch {
+            data = null;
+        }
+        return { response, data };
+    }
 
-        if (verifyRes.ok) {
-            showStatus('Authentication Successful!', 'success');
-            debug('login', `Session Token: ${verifyData.session_token.substring(0, 16)}...`);
-            // Store token if needed
-        } else {
-            showStatus(`Authentication Failed: ${verifyData.error}`, 'error');
+    // ----------------------------
+    // Public handlers (called by HTML)
+    // ----------------------------
+    async function handleRegister(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const username = form.username.value;
+        const password = form.password.value;
+        const confirm = form['password-confirm'].value;
+
+        if (password !== confirm) {
+            showStatus('Passwords do not match', 'error');
+            debug('register', 'Registration failed: passwords do not match', 'error');
+            return;
         }
 
-    } catch (e) {
-        console.error(e);
-        showStatus(`Error: ${e.message}`, 'error');
+        try {
+            showStatus('Generating keys...', 'info');
+            debug('register', 'Deriving private key...', 'info');
+
+            const s = requireSodium();
+            const privateKey = await derivePrivateKey(username, password);
+
+            const keyPair = s.crypto_sign_seed_keypair(privateKey);
+            const publicKey = s.to_hex(keyPair.publicKey);
+            debug('register', `Public Key: ${publicKey.substring(0, 16)}...`, 'info');
+
+            const { response, data } = await postJson('/api/register', {
+                username: username,
+                public_key: publicKey
+            });
+
+            if (response.ok) {
+                showStatus('Registration successful! You can now login.', 'success');
+                debug('register', 'Registration successful.', 'success');
+                form.reset();
+                setTimeout(() => showTab('login'), 1500);
+            } else {
+                const reason = data?.error || `HTTP ${response.status}`;
+                showStatus(`Registration failed: ${reason}`, 'error');
+                debug('register', `Registration failed: ${reason}`, 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            showStatus(`Error: ${e.message}`, 'error');
+            debug('register', `Error: ${e.message}`, 'error');
+        }
     }
-}
+
+    async function handleLogin(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const username = form.username.value;
+        const password = form.password.value;
+
+        try {
+            showStatus('Starting authentication...', 'info');
+            debug('login', 'Requesting challenge...', 'info');
+
+            const { response: challengeRes, data: challengeData } = await postJson('/api/auth/challenge', { username });
+            if (!challengeRes.ok) {
+                const reason = challengeData?.error || `HTTP ${challengeRes.status}`;
+                debug('login', `Challenge request failed: ${reason}`, 'error');
+                throw new Error(reason);
+            }
+
+            const challengeHex = challengeData.challenge;
+            debug('login', `Challenge: ${challengeHex.substring(0, 16)}...`, 'info');
+
+            debug('login', 'Computing Zero-Knowledge Proof...', 'info');
+            const privateKey = await derivePrivateKey(username, password);
+            const { Vhex, rHex } = computeProof(privateKey, challengeHex);
+
+            debug('login', 'Proof computed. Sending to server...', 'info');
+            const { response: verifyRes, data: verifyData } = await postJson('/api/auth/verify', {
+                username: username,
+                V: Vhex,
+                c: challengeHex,
+                r: rHex
+            });
+
+            if (verifyRes.ok) {
+                showStatus('Authentication Successful!', 'success');
+                debug('login', 'Authentication successful.', 'success');
+                if (verifyData?.session_token) {
+                    debug('login', `Session Token: ${verifyData.session_token.substring(0, 16)}...`, 'success');
+                }
+            } else {
+                const reason = verifyData?.error || `HTTP ${verifyRes.status}`;
+                showStatus(`Authentication Failed: ${reason}`, 'error');
+                debug('login', `Authentication failed: ${reason}`, 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            showStatus(`Error: ${e.message}`, 'error');
+            debug('login', `Error: ${e.message}`, 'error');
+        }
+    }
+
+    // Keep global names for inline HTML event handlers
+    window.showTab = showTab;
+    window.showStatus = showStatus;
+    window.debug = debug;
+    window.handleRegister = handleRegister;
+    window.handleLogin = handleLogin;
+})();

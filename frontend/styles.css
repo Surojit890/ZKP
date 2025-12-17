@@ -1,3 +1,6 @@
+/* Font Imports */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
+
 /* ZKP Authentication System - Split Screen Layout */
 
 * {
@@ -6,71 +9,34 @@
     box-sizing: border-box;
 }
 
+/* Brutalist monochrome theme primitives */
 :root {
-    --primary: #667eea;
-    --primary-dark: #5568d3;
-    --secondary: #764ba2;
-    --success: #10b981;
-    --error: #ef4444;
-    --info: #3b82f6;
-    --bg-dark: #0f172a;
-    --bg-card: #1e293b;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --border: #334155;
+    --bg: #0b0b0b;
+    --surface: #111111;
+    --surface-2: #0f0f0f;
+    --border: #2a2a2a;
+    --border-strong: #3a3a3a;
+    --text-primary: #f5f5f5;
+    --text-secondary: #a3a3a3;
+    --text-faint: #7a7a7a;
+    --focus-ring: rgba(245, 245, 245, 0.18);
+    --focus-border: #f5f5f5;
+
+    --log-info-bg: rgba(59, 130, 246, 0.14);
+    --log-success-bg: rgba(16, 185, 129, 0.14);
+    --log-error-bg: rgba(239, 68, 68, 0.14);
+    --log-info-border: rgba(59, 130, 246, 0.6);
+    --log-success-border: rgba(16, 185, 129, 0.6);
+    --log-error-border: rgba(239, 68, 68, 0.6);
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    font-family: 'Lato', sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text-primary);
     min-height: 100dvh;
-    display: flex;
     padding: 0;
-    position: relative;
-    overflow: hidden;
-}
-
-/* Animated background */
-body::before {
-    content: '';
-    position: absolute;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
-    border-radius: 50%;
-    top: -250px;
-    right: -250px;
-    animation: float 20s ease-in-out infinite;
-    z-index: 0;
-}
-
-body::after {
-    content: '';
-    position: absolute;
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(118, 75, 162, 0.15) 0%, transparent 70%);
-    border-radius: 50%;
-    bottom: -200px;
-    left: -200px;
-    animation: float 15s ease-in-out infinite reverse;
-    z-index: 0;
-}
-
-@keyframes float {
-
-    0%,
-    100% {
-        transform: translate(0, 0) rotate(0deg);
-    }
-
-    33% {
-        transform: translate(30px, -30px) rotate(120deg);
-    }
-
-    66% {
-        transform: translate(-20px, 20px) rotate(240deg);
-    }
 }
 
 /* Split Container */
@@ -78,8 +44,7 @@ body::after {
     display: flex;
     width: 100%;
     height: 100dvh;
-    position: relative;
-    z-index: 1;
+    background: var(--bg);
 }
 
 /* Left Panel - Authentication */
@@ -95,25 +60,10 @@ body::after {
 .auth-container {
     width: 100%;
     max-width: 450px;
-    background: rgba(30, 41, 59, 0.7);
-    backdrop-filter: blur(20px);
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    background: var(--surface);
+    border-radius: 0;
+    border: 1px solid var(--border);
     overflow: hidden;
-    animation: slideUp 0.6s ease;
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 /* Right Panel - Logs */
@@ -130,23 +80,20 @@ body::after {
     width: 100%;
     height: 100%;
     max-height: 800px;
-    background: rgba(30, 41, 59, 0.7);
-    backdrop-filter: blur(20px);
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    background: var(--surface);
+    border-radius: 0;
+    border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    animation: slideUp 0.6s ease 0.2s both;
 }
 
 .logs-header {
     padding: 24px 30px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    background: var(--surface-2);
 }
 
 .logs-header h2 {
@@ -154,30 +101,29 @@ body::after {
     font-size: 20px;
     font-weight: 700;
     margin: 0;
+    letter-spacing: -0.02em;
 }
 
 .clear-btn {
     padding: 8px 16px;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    border-radius: 8px;
-    color: #f87171;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 0;
+    color: var(--text-primary);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
 }
 
 .clear-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
-    transform: translateY(-1px);
+    background: #151515;
 }
 
 .logs-tabs {
     display: flex;
     gap: 0;
     padding: 0 30px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border);
 }
 
 .log-tab-btn {
@@ -188,7 +134,6 @@ body::after {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-secondary);
-    transition: all 0.3s ease;
     border-bottom: 2px solid transparent;
 }
 
@@ -197,34 +142,25 @@ body::after {
 }
 
 .log-tab-btn.active {
-    color: var(--primary);
-    border-bottom-color: var(--primary);
+    color: var(--text-primary);
+    border-bottom-color: var(--text-primary);
 }
 
 /* Header */
 .header {
     padding: 30px 30px 24px;
     text-align: center;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
 }
 
 .logo {
     margin-bottom: 16px;
     display: inline-block;
-    animation: pulse 2s ease-in-out infinite;
 }
 
-@keyframes pulse {
-
-    0%,
-    100% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.05);
-    }
+.logo svg {
+    color: var(--text-primary);
 }
 
 h1 {
@@ -232,10 +168,7 @@ h1 {
     font-size: 24px;
     font-weight: 700;
     margin-bottom: 6px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    letter-spacing: -0.03em;
 }
 
 .subtitle {
@@ -250,7 +183,7 @@ h1 {
     gap: 0;
     padding: 0 30px;
     margin-top: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border);
 }
 
 .nav-btn {
@@ -262,7 +195,6 @@ h1 {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-secondary);
-    transition: all 0.3s ease;
     border-bottom: 2px solid transparent;
     position: relative;
 }
@@ -277,83 +209,56 @@ h1 {
 }
 
 .nav-btn.active {
-    color: var(--primary);
-    border-bottom-color: var(--primary);
-}
-
-.nav-btn.active::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 100%;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-    opacity: 0.5;
+    color: var(--text-primary);
+    border-bottom-color: var(--text-primary);
 }
 
 /* Status Messages */
 .status-message {
     padding: 14px 30px;
     margin: 16px 30px 0;
-    border-radius: 12px;
+    border-radius: 0;
     font-size: 13px;
     font-weight: 500;
     display: none;
-    animation: slideDown 0.3s ease;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.status-info {
-    background: rgba(59, 130, 246, 0.1);
-    color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.status-success {
-    background: rgba(16, 185, 129, 0.1);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
+/* JS uses: status-message info|success|error */
+.status-message.info,
+.status-message.success,
+.status-message.error,
+.status-info,
+.status-success,
 .status-error {
-    background: rgba(239, 68, 68, 0.1);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    display: block;
+    background: var(--surface-2);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+}
+
+.status-message.error,
+.status-error {
+    border-style: dashed;
+}
+
+.status-message.success,
+.status-success {
+    border-style: solid;
+}
+
+.status-message.info,
+.status-info {
+    border-style: solid;
 }
 
 /* Tab Content */
 .tab-content {
     display: none;
     padding: 24px 30px;
-    animation: fadeIn 0.4s ease;
 }
 
 .tab-content.active {
     display: block;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 /* Forms */
@@ -373,12 +278,11 @@ input[type="text"],
 input[type="password"] {
     width: 100%;
     padding: 12px 14px;
-    background: rgba(15, 23, 42, 0.5);
+    background: transparent;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 0;
     font-size: 14px;
     color: var(--text-primary);
-    transition: all 0.3s ease;
     font-family: inherit;
 }
 
@@ -390,21 +294,19 @@ input[type="password"]::placeholder {
 input[type="text"]:focus,
 input[type="password"]:focus {
     outline: none;
-    border-color: var(--primary);
-    background: rgba(15, 23, 42, 0.7);
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    border-color: var(--focus-border);
+    box-shadow: 0 0 0 4px var(--focus-ring);
 }
 
 /* Buttons */
 .btn {
     width: 100%;
     padding: 12px 20px;
-    border: none;
-    border-radius: 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: 0;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -413,48 +315,32 @@ input[type="password"]:focus {
     overflow: hidden;
 }
 
-.btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s ease;
-}
-
-.btn:hover::before {
-    left: 100%;
-}
-
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-    color: white;
+    background: var(--text-primary);
+    color: #0b0b0b;
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    filter: brightness(0.92);
 }
 
 .btn-primary:active {
-    transform: translateY(0);
+    filter: brightness(0.88);
 }
 
-.btn svg {
-    transition: transform 0.3s ease;
-}
-
-.btn:hover svg {
-    transform: translateX(4px);
+.btn:focus-visible,
+.clear-btn:focus-visible,
+.nav-btn:focus-visible,
+.log-tab-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--focus-ring);
 }
 
 /* Debug Info / Logs */
 .debug-info {
     flex: 1;
     padding: 20px 30px;
-    background: rgba(15, 23, 42, 0.3);
+    background: var(--surface-2);
     overflow-y: auto;
     font-family: 'JetBrains Mono', 'Monaco', 'Menlo', monospace;
     font-size: 12px;
@@ -471,46 +357,49 @@ input[type="password"]:focus {
 }
 
 .debug-info::-webkit-scrollbar-track {
-    background: rgba(15, 23, 42, 0.3);
+    background: var(--surface-2);
 }
 
 .debug-info::-webkit-scrollbar-thumb {
     background: var(--border);
-    border-radius: 4px;
+    border-radius: 0;
 }
 
 .debug-info::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+    background: var(--border-strong);
 }
 
-.debug-info div {
+.debug-info .log-line {
     padding: 8px 12px;
     margin-bottom: 4px;
-    background: rgba(15, 23, 42, 0.5);
-    border-left: 2px solid var(--primary);
-    border-radius: 4px;
-    animation: logEntry 0.3s ease;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--text-primary);
+    border-radius: 0;
 }
 
-@keyframes logEntry {
-    from {
-        opacity: 0;
-        transform: translateX(-10px);
-    }
+.debug-info .log-line.info {
+    background: var(--log-info-bg);
+    border-left-color: var(--log-info-border);
+}
 
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+.debug-info .log-line.success {
+    background: var(--log-success-bg);
+    border-left-color: var(--log-success-border);
+}
+
+.debug-info .log-line.error {
+    background: var(--log-error-bg);
+    border-left-color: var(--log-error-border);
 }
 
 .logs-footer {
     padding: 16px 30px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(15, 23, 42, 0.3);
+    background: var(--surface-2);
 }
 
 .log-count {
@@ -523,8 +412,8 @@ input[type="password"]:focus {
 .footer {
     padding: 16px 30px;
     text-align: center;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    background: rgba(15, 23, 42, 0.3);
+    border-top: 1px solid var(--border);
+    background: var(--surface-2);
 }
 
 #status-info {
@@ -564,7 +453,7 @@ input[type="password"]:focus {
 
     .auth-container,
     .logs-container {
-        border-radius: 16px;
+        border-radius: 0;
     }
 
     .header {
