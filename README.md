@@ -1,4 +1,5 @@
 # ZKP-Based Web Authentication System
+
 ## Zero-Knowledge Proof Authentication with WebAssembly
 
 A modern web authentication system where user secrets never leave their device. Uses libsodium compiled to WebAssembly for cryptographic operations in the browser, with a Python Flask backend for registration and Schnorr ZKP verification.
@@ -87,6 +88,7 @@ A modern web authentication system where user secrets never leave their device. 
    - If false: Invalid proof → Authentication failed
 
 **Why it works:**
+
 - If prover has private key `a` with public key `A = [a]G`
 - And creates commitment `V = [v]G`
 - And computes `r = v - c*a mod q`
@@ -95,6 +97,7 @@ A modern web authentication system where user secrets never leave their device. 
 ### Installation
 
 #### Prerequisites
+
 - Python 3.8+
 - Node.js (for serving frontend)
 - MongoDB (or use in-memory fallback)
@@ -107,6 +110,7 @@ pip install -r requirements.txt
 ```
 
 Run the server:
+
 ```bash
 python app_final.py
 ```
@@ -127,9 +131,11 @@ Open `http://localhost:8000` in your browser.
 ### API Endpoints
 
 #### POST /api/register
+
 Register a new user
 
 **Request:**
+
 ```json
 {
   "username": "alice",
@@ -138,6 +144,7 @@ Register a new user
 ```
 
 **Response (201):**
+
 ```json
 {
   "message": "User registered successfully"
@@ -145,6 +152,7 @@ Register a new user
 ```
 
 **Errors:**
+
 - 400: Invalid input
 - 409: Username already exists
 - 500: Server error
@@ -152,9 +160,11 @@ Register a new user
 ---
 
 #### POST /api/auth/challenge
+
 Get authentication challenge
 
 **Request:**
+
 ```json
 {
   "username": "alice"
@@ -162,6 +172,7 @@ Get authentication challenge
 ```
 
 **Response (200):**
+
 ```json
 {
   "challenge": "deadbeef...(64 hex chars)"
@@ -169,15 +180,18 @@ Get authentication challenge
 ```
 
 **Errors:**
+
 - 404: User not found
 - 500: Server error
 
 ---
 
 #### POST /api/auth/verify
+
 Verify ZKP authentication proof
 
 **Request:**
+
 ```json
 {
   "username": "alice",
@@ -188,6 +202,7 @@ Verify ZKP authentication proof
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Authentication successful",
@@ -197,6 +212,7 @@ Verify ZKP authentication proof
 ```
 
 **Errors:**
+
 - 401: Invalid proof
 - 404: User not found
 - 500: Server error
@@ -204,9 +220,11 @@ Verify ZKP authentication proof
 ---
 
 #### GET /api/user/<username>
+
 Get public user information
 
 **Response (200):**
+
 ```json
 {
   "username": "alice",
@@ -217,18 +235,81 @@ Get public user information
 
 ### Testing
 
-#### Run Backend Tests
+The project includes comprehensive test coverage across multiple security and functionality dimensions.
+
+#### Test Suites Overview
+
+| Test Suite              | File                     | Tests    | Purpose                                |
+| ----------------------- | ------------------------ | -------- | -------------------------------------- |
+| **Backend Unit Tests**  | `test_backend.py`        | 15       | Core API functionality and validation  |
+| **Test Vectors**        | `test_vectors.py`        | Multiple | Schnorr ZKP mathematical correctness   |
+| **Replay Attack Tests** | `test_replay_attacks.py` | 8        | Replay attack vulnerability assessment |
+| **MITM Attack Tests**   | `test_mitm_vectors.py`   | 7        | Man-in-the-Middle attack simulation    |
+| **XSS Security Tests**  | `test_xss_vectors.py`    | 5        | Cross-Site Scripting prevention        |
+
+**Total**: 40+ test cases covering functionality, security, and cryptographic correctness.
+
+#### Run All Tests
 
 ```bash
-cd tests
-pytest test_backend.py -v
-```
+# Ensure backend is running first
+cd backend
+python app_final.py
 
-#### Test Integration
-
-```bash
+# In another terminal, run tests
 pytest tests/ -v
 ```
+
+#### Run Specific Test Suites
+
+**Backend Unit Tests** - API endpoints and validation:
+
+```bash
+pytest tests/test_backend.py -v
+```
+
+**Test Vectors** - Cryptographic correctness:
+
+```bash
+pytest tests/test_vectors.py -v
+```
+
+**Replay Attack Tests** - Security against replay attacks:
+
+```bash
+pytest tests/test_replay_attacks.py -v
+```
+
+**MITM Attack Tests** - Transport security:
+
+```bash
+pytest tests/test_mitm_vectors.py -v
+```
+
+**XSS Security Tests** - Input sanitization:
+
+```bash
+pytest tests/test_xss_vectors.py -v
+```
+
+#### Detailed Test Documentation
+
+For comprehensive documentation of all test cases including what each test does, how it works, and why it exists, see:
+
+📖 **[TEST_DOCUMENTATION.md](TEST_DOCUMENTATION.md)** - Complete test case documentation
+
+#### Test Coverage
+
+- ✅ Registration validation (5 tests)
+- ✅ Challenge generation (2 tests)
+- ✅ ZKP verification (3 tests)
+- ✅ User management (3 tests)
+- ✅ Cryptographic utilities (2 tests)
+- ✅ Schnorr protocol vectors (multiple)
+- ✅ Integration scenarios (multiple)
+- ✅ Replay attack vectors (8 scenarios)
+- ✅ MITM attack vectors (7 scenarios)
+- ✅ XSS attack vectors (5 categories)
 
 ### Security Considerations
 
@@ -264,21 +345,30 @@ ZKP/
 │   ├── styles.css             # Styling
 │   └── libsodium.wasm         # (Downloaded at runtime)
 ├── tests/
-│   ├── test_backend.py        # Backend unit tests
+│   ├── test_backend.py        # Backend unit tests (15 tests)
 │   ├── test_vectors.py        # Test vectors & integration tests
+│   ├── test_replay_attacks.py # Replay attack security tests (8 tests)
+│   ├── test_mitm_vectors.py   # MITM attack simulation (7 tests)
+│   ├── test_xss_vectors.py    # XSS security tests (5 tests)
 │   └── conftest.py            # Pytest configuration
-└── README.md                  # This file
+├── README.md                  # This file
+├── TEST_DOCUMENTATION.md      # Comprehensive test documentation
+├── SECURITY_TESTING_METHODOLOGY.md  # Security testing details
+├── REPLAY_ATTACK_DOCUMENTATION.md   # Replay attack analysis
+└── WALKTHROUGH_TUTORIAL.md    # Getting started guide
 ```
 
 ### Cryptographic Details
 
 #### Ed25519
+
 - **Curve**: Twisted Edwards curve `a*x^2 + y^2 = 1 + d*x^2*y^2`
 - **Parameters**: `a = -1`, `d = -121665/121666`
 - **Order**: `q = 2^252 + 27742317777884353535851937790883648493`
 - **Base Point**: `G` (standard generator)
 
 #### Schnorr Signature Scheme (adapted for ZKP)
+
 - **Prover**: Has private key `a`, public key `A = [a]G`
 - **Commitment**: `V = [v]G` where `v` is random
 - **Challenge**: `c` from verifier
@@ -286,9 +376,10 @@ ZKP/
 - **Verification**: `[r]G + [c]A == V`
 
 #### Key Derivation
+
 - **Function**: PBKDF2 with Argon2
 - **Input**: Password (user-provided)
-- **Salt**: SHA256(username + "_salt")[:16]
+- **Salt**: SHA256(username + "\_salt")[:16]
 - **Output**: 32 bytes (Ed25519 private key seed)
 - **Time Cost**: MODERATE (2^3 = 8 iterations)
 - **Memory Cost**: MODERATE (65536 KB)
