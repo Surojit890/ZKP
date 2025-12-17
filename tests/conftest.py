@@ -61,17 +61,44 @@ def clear_test_db():
         from pymongo import MongoClient
         import os
         
-        # Use same MongoDB URI as app
-        MONGODB_URI = os.getenv
-        
-        client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
-        db = client['zkp_auth']
-        
-        # Clear collections before each test
-        db['users'].delete_many({})
-        db['challenges'].delete_many({})
-        
-        yield
+        mongodb_uri = os.getenv("MONGODB_URI")
+        if not mongodb_uri:
+            # App will use in-memory storage; nothing to clear.
+            yield
+            return
+
+        client = MongoClient(mongodb_uri, serverSelectionTimeoutMS=5000)
+        # Force a connection attempt early so failures are caught here.
+        client.admin.command("ping")
+        db = client["zkp_auth"]
+
+        # Only remove test data (do NOT wipe entire collections)
+        test_usernames = {
+            # tests/test_backend.py
+            "testuser",
+            "duplicate",
+            "testuser2",
+            "testuser3",
+            "chaltest",
+            "nonexistent",
+            "verifytest",
+            "formattest",
+            "infotest",
+            "debugtest",
+            # tests/test_vectors.py
+            "alice",
+            "bob",
+            "charlie",
+            "dave",
+        }
+
+        db["users"].delete_many({"username": {"$in": list(test_usernames)}})
+        db["challenges"].delete_many({"username": {"$in": list(test_usernames)}})
+
+        try:
+            yield
+        finally:
+            client.close()
         
         # Cleanup after test (optional)
         # db['users'].delete_many({})

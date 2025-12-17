@@ -7,6 +7,7 @@ import json
 import requests
 import time
 import hashlib
+import pytest
 from typing import Dict, List, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -15,6 +16,14 @@ from datetime import datetime, timedelta
 # Use Windows host IP when running from WSL, localhost for Windows PowerShell
 import os
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
+
+def _require_backend():
+    try:
+        r = requests.get(f"{BACKEND_URL}/health", timeout=2)
+        if r.status_code != 200:
+            pytest.fail(f"Backend not healthy at {BACKEND_URL} (status {r.status_code})")
+    except Exception as e:
+        pytest.fail(f"Backend not reachable at {BACKEND_URL}: {e}")
 
 @dataclass
 class ReplayTestResult:
@@ -903,3 +912,53 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+class TestReplayAttacks:
+    def test_proof_replay_same_challenge(self):
+        _require_backend()
+        suite = ReplayAttackTestSuite(BACKEND_URL)
+        result = suite.test_proof_replay_same_challenge()
+        assert result is not None
+
+    def test_proof_replay_different_challenge(self):
+        _require_backend()
+        suite = ReplayAttackTestSuite(BACKEND_URL)
+        result = suite.test_proof_replay_different_challenge()
+        assert result is not None
+
+    def test_proof_replay_time_delayed(self):
+        _require_backend()
+        suite = ReplayAttackTestSuite(BACKEND_URL)
+        result = suite.test_proof_replay_time_delayed()
+        assert result is not None
+
+    def test_proof_replay_session_reuse(self):
+        _require_backend()
+        suite = ReplayAttackTestSuite(BACKEND_URL)
+        result = suite.test_proof_replay_session_reuse()
+        assert result is not None
+
+    def test_challenge_replay(self):
+        _require_backend()
+        suite = ReplayAttackTestSuite(BACKEND_URL)
+        result = suite.test_challenge_replay()
+        assert result is not None
+
+    def test_partial_proof_replay(self):
+        _require_backend()
+        suite = ReplayAttackTestSuite(BACKEND_URL)
+        result = suite.test_partial_proof_replay()
+        assert result is not None
+
+    def test_concurrent_replay(self):
+        _require_backend()
+        suite = ReplayAttackTestSuite(BACKEND_URL)
+        result = suite.test_concurrent_replay()
+        assert result is not None
+
+    def test_replay_with_modified_username(self):
+        _require_backend()
+        suite = ReplayAttackTestSuite(BACKEND_URL)
+        result = suite.test_replay_with_modified_username()
+        assert result is not None

@@ -271,26 +271,26 @@ class TestCryptoUtilities:
     def test_bytes_to_int(self):
         """Test bytes to int conversion"""
         try:
-            from app_final import bytes_to_int
+            from zkp_auth.crypto import bytes_to_int
             
             # Test basic conversion
             b = bytes([1, 2, 3, 4])
             result = bytes_to_int(b)
             assert result == 0x04030201  # Little-endian
         except ImportError:
-            pytest.skip("Backend not available")
+            pytest.fail("Backend not available")
     
     def test_int_to_bytes(self):
         """Test int to bytes conversion"""
         try:
-            from app_final import int_to_bytes
+            from zkp_auth.crypto import int_to_bytes
             
             # Test conversion
             n = 0x04030201
             result = int_to_bytes(n, 4)
             assert result == bytes([1, 2, 3, 4])
         except ImportError:
-            pytest.skip("Backend not available")
+            pytest.fail("Backend not available")
 
 
 if __name__ == '__main__':

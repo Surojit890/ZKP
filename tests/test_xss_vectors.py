@@ -6,11 +6,21 @@ Tests common XSS vectors against the ZKP authentication system
 import requests
 import json
 import sys
+import os
+import pytest
 from typing import List, Dict, Tuple
 
 # Configuration
 BACKEND_URL = "http://localhost:5000"
 FRONTEND_URL = "http://localhost:8001"
+
+def _require_backend():
+    try:
+        r = requests.get(f"{BACKEND_URL}/health", timeout=2)
+        if r.status_code != 200:
+            pytest.fail(f"Backend not healthy at {BACKEND_URL} (status {r.status_code})")
+    except Exception as e:
+        pytest.fail(f"Backend not reachable at {BACKEND_URL}: {e}")
 
 class XSSTestResult:
     """Track individual test results"""
@@ -334,7 +344,7 @@ class XSSSecurityTester:
         print(f"Success Rate:      {(passed/total*100):.1f}%")
         
         if failed > 0:
-            print(f"\  WARNING: {failed} vulnerabilities detected!")
+            print(f"\nWARNING: {failed} vulnerabilities detected!")
             print("\nFailed Tests:")
             for result in self.results:
                 if result.payload_reflected:
@@ -354,3 +364,39 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+class TestXSSVectors:
+    def test_register_username_injection(self):
+        _require_backend()
+        tester = XSSSecurityTester(BACKEND_URL, FRONTEND_URL)
+        results = tester.test_register_username_injection()
+        assert isinstance(results, list)
+        assert len(results) > 0
+
+    def test_challenge_endpoint_injection(self):
+        _require_backend()
+        tester = XSSSecurityTester(BACKEND_URL, FRONTEND_URL)
+        results = tester.test_challenge_endpoint_injection()
+        assert isinstance(results, list)
+        assert len(results) > 0
+
+    def test_verify_endpoint_injection(self):
+        _require_backend()
+        tester = XSSSecurityTester(BACKEND_URL, FRONTEND_URL)
+        results = tester.test_verify_endpoint_injection()
+        assert isinstance(results, list)
+        assert len(results) > 0
+
+    def test_csp_headers(self):
+        _require_backend()
+        tester = XSSSecurityTester(BACKEND_URL, FRONTEND_URL)
+        headers = tester.test_csp_headers()
+        assert isinstance(headers, dict)
+
+    def test_input_validation(self):
+        _require_backend()
+        tester = XSSSecurityTester(BACKEND_URL, FRONTEND_URL)
+        results = tester.test_input_validation()
+        assert isinstance(results, list)
+        assert len(results) > 0

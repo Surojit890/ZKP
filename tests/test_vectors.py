@@ -2,7 +2,16 @@
 Test vectors and integration tests for ZKP Authentication
 """
 
+import logging
 import json
+import os
+import sys
+
+import pytest
+
+
+# Ensure backend package importable when running tests directly
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 # Test vectors for Schnorr ZKP verification
 # These vectors verify the mathematical correctness of the protocol
@@ -254,3 +263,72 @@ __all__ = [
     'TestConfig',
     'run_integration_test'
 ]
+
+
+@pytest.fixture
+def client():
+    """Create Flask test client (in-process, no network)."""
+    try:
+        from app_final import app
+
+        app.config['TESTING'] = True
+        with app.test_client() as test_client:
+            yield test_client
+    except ImportError:
+        pytest.skip('Backend dependencies not installed')
+
+
+def _get_json_response(response):
+    if hasattr(response, 'get_json'):
+        return response.get_json(silent=True) or {}
+    try:
+        return response.json() or {}
+    except Exception:
+        return {}
+
+
+class TestSchnorrVectors:
+    def test_schnorr_vectors_match_expectations(self):
+        try:
+            from zkp_auth.crypto import verify_schnorr_zkp
+        except ImportError:
+            pytest.skip('Backend crypto not available')
+
+        logger = logging.getLogger('tests.test_vectors')
+
+        for vector in SchnorrTestVectors.get_test_vectors():
+            is_valid = verify_schnorr_zkp(
+                V_hex=vector['commitment'],
+                c_hex=vector['challenge'],
+                r_hex=vector['response'],
+                A_hex=vector['public_key'],
+                logger=logger,
+            )
+            assert is_valid is vector['should_pass'], vector['name']
+
+
+class TestIntegrationScenarios:
+    @pytest.mark.parametrize('scenario', IntegrationTests.get_scenarios(), ids=lambda s: s['name'])
+    def test_scenarios(self, client, scenario):
+        for step in scenario['steps']:
+            expected = step.get('expected_status', 200)
+            expected_statuses = expected if isinstance(expected, list) else [expected]
+
+            if step['method'] == 'POST':
+                response = client.post(step['endpoint'], json=step.get('payload', {}))
+            elif step['method'] == 'GET':
+                response = client.get(step['endpoint'])
+            else:
+                raise ValueError(f"Unknown method: {step['method']}")
+
+            assert response.status_code in expected_statuses, (
+                f"{scenario['name']} step {step['step']} expected {expected_statuses}, got {response.status_code}"
+            )
+
+            if 'expected_fields' in step:
+                data = _get_json_response(response)
+                fields = step.get('expected_fields', [])
+                # Some scenarios list multiple acceptable keys (e.g., error vs message).
+                assert any(field in data for field in fields), (
+                    f"{scenario['name']} step {step['step']} expected any of {fields} in response JSON"
+                )

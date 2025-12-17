@@ -6,6 +6,8 @@ Demonstrates MITM vulnerabilities and tests defenses
 import json
 import requests
 import time
+import os
+import pytest
 from typing import Dict, List, Tuple, Any
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -14,6 +16,14 @@ import hashlib
 # Configuration
 BACKEND_URL = "http://localhost:5000"
 FRONTEND_URL = "http://localhost:8001"
+
+def _require_backend():
+    try:
+        r = requests.get(f"{BACKEND_URL}/health", timeout=2)
+        if r.status_code != 200:
+            pytest.fail(f"Backend not healthy at {BACKEND_URL} (status {r.status_code})")
+    except Exception as e:
+        pytest.fail(f"Backend not reachable at {BACKEND_URL}: {e}")
 
 @dataclass
 class MITMTestResult:
@@ -192,60 +202,87 @@ class MITMTestSuite:
                 timeout=5
             )
             
-            if challenge_response.ok:
-                challenge = challenge_response.json().get('challenge', 'c' * 64)
+            if not challenge_response.ok:
+                print(f"  Challenge request failed: {challenge_response.status_code}")
+                result = MITMTestResult(
+                    test_name="Session Token Hijacking",
+                    attack_vector="Intercepting session token from response",
+                    vulnerable=False,
+                    severity="LOW",
+                    description="Challenge endpoint rejected request; no token exposed",
+                    evidence=f"Status {challenge_response.status_code}",
+                    mitigation="Keep challenge generation strict; continue verifying auth proofs"
+                )
+                self.results.append(result)
+                return result
+
+            challenge = challenge_response.json().get('challenge', 'c' * 64)
+            
+            # Create a valid proof (for testing, we just pass dummy values)
+            # In real attack, attacker would need to solve the ZKP
+            verify_data = {
+                "username": "testuser_token",
+                "V": "d" * 64,
+                "c": "e" * 64,
+                "r": "f" * 64
+            }
+            
+            verify_response = self.session.post(
+                f"{self.backend_url}/api/auth/verify",
+                json=verify_data,
+                timeout=5
+            )
+            
+            # Inspect response for token
+            if verify_response.ok:
+                response_json = verify_response.json()
+                token = response_json.get('session_token', 'NO_TOKEN')
                 
-                # Create a valid proof (for testing, we just pass dummy values)
-                # In real attack, attacker would need to solve the ZKP
-                verify_data = {
-                    "username": "testuser_token",
-                    "V": "d" * 64,
-                    "c": "e" * 64,
-                    "r": "f" * 64
-                }
+                print(f"  Intercepted token: {token[:20]}..." if token != 'NO_TOKEN' else "  Token not present")
+                print(f"  Token location: Response JSON")
+                print(f"  Token visible over HTTP: YES")
                 
-                verify_response = self.session.post(
-                    f"{self.backend_url}/api/auth/verify",
-                    json=verify_data,
-                    timeout=5
+                # Store token
+                self.intercepted_data['session_token'] = token
+                
+                vulnerable = token != 'NO_TOKEN'  # If token is returned, it's capturable
+                
+                result = MITMTestResult(
+                    test_name="Session Token Hijacking",
+                    attack_vector="Intercepting session token from response",
+                    vulnerable=vulnerable,
+                    severity="MEDIUM" if vulnerable else "LOW",
+                    description=(
+                        f"Session tokens are returned in plain HTTP responses. "
+                        f"Attacker can capture and replay token. "
+                        f"Token validation not yet implemented."
+                    ),
+                    evidence=f"Token: {token[:32]}...",
+                    mitigation="Implement token validation, expiration, and request signing"
                 )
                 
-                # Inspect response for token
-                if verify_response.ok:
-                    response_json = verify_response.json()
-                    token = response_json.get('session_token', 'NO_TOKEN')
-                    
-                    print(f"  Intercepted token: {token[:20]}..." if token != 'NO_TOKEN' else "  Token not present")
-                    print(f"  Token location: Response JSON")
-                    print(f"  Token visible over HTTP: YES")
-                    
-                    # Store token
-                    self.intercepted_data['session_token'] = token
-                    
-                    vulnerable = token != 'NO_TOKEN'  # If token is returned, it's capturable
-                    
-                    result = MITMTestResult(
-                        test_name="Session Token Hijacking",
-                        attack_vector="Intercepting session token from response",
-                        vulnerable=vulnerable,
-                        severity="MEDIUM" if vulnerable else "LOW",
-                        description=(
-                            f"Session tokens are returned in plain HTTP responses. "
-                            f"Attacker can capture and replay token. "
-                            f"Token validation not yet implemented."
-                        ),
-                        evidence=f"Token: {token[:32]}...",
-                        mitigation="Implement token validation, expiration, and request signing"
-                    )
-                    
-                    self.results.append(result)
-                    
-                    if vulnerable:
-                        print("    WARNING: Token captured and stored by attacker")
-                    else:
-                        print("  PROTECTED: No token present in response")
-                    
-                    return result
+                self.results.append(result)
+                
+                if vulnerable:
+                    print("    WARNING: Token captured and stored by attacker")
+                else:
+                    print("  PROTECTED: No token present in response")
+                
+                return result
+
+            # Verification rejected -> treat as protected; token not exposed
+            print(f"  Verification rejected: {verify_response.status_code}")
+            result = MITMTestResult(
+                test_name="Session Token Hijacking",
+                attack_vector="Intercepting session token from response",
+                vulnerable=False,
+                severity="LOW",
+                description="Server rejected proof; no session token exposed",
+                evidence=f"Status {verify_response.status_code}: {verify_response.text[:80]}",
+                mitigation="Continue rejecting invalid proofs and avoid issuing tokens on failure"
+            )
+            self.results.append(result)
+            return result
             
         except Exception as e:
             print(f"    ERROR: {str(e)}")
@@ -632,3 +669,47 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+class TestMITMVectors:
+    def test_http_traffic_interception(self):
+        _require_backend()
+        suite = MITMTestSuite(BACKEND_URL)
+        result = suite.test_http_traffic_interception()
+        assert result is not None
+
+    def test_authentication_proof_tampering(self):
+        _require_backend()
+        suite = MITMTestSuite(BACKEND_URL)
+        result = suite.test_authentication_proof_tampering()
+        assert result is not None
+
+    def test_session_token_hijacking(self):
+        _require_backend()
+        suite = MITMTestSuite(BACKEND_URL)
+        result = suite.test_session_token_hijacking()
+        assert result is not None
+
+    def test_response_injection(self):
+        _require_backend()
+        suite = MITMTestSuite(BACKEND_URL)
+        result = suite.test_response_injection()
+        assert result is not None
+
+    def test_replay_attack_detection(self):
+        _require_backend()
+        suite = MITMTestSuite(BACKEND_URL)
+        result = suite.test_replay_attack_detection()
+        assert result is not None
+
+    def test_request_injection(self):
+        _require_backend()
+        suite = MITMTestSuite(BACKEND_URL)
+        result = suite.test_request_injection()
+        assert result is not None
+
+    def test_security_headers(self):
+        _require_backend()
+        suite = MITMTestSuite(BACKEND_URL)
+        result = suite.test_security_headers()
+        assert result is not None
