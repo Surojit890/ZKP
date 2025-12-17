@@ -62,10 +62,7 @@ def clear_test_db():
         import os
         
         # Use same MongoDB URI as app
-        MONGODB_URI = os.getenv(
-            'MONGODB_URI',
-            'mongodb+srv://admin:H9skGpb6jYa%2AMb%24@soujatya.gjxsm.mongodb.net'
-        )
+        MONGODB_URI = os.getenv
         
         client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
         db = client['zkp_auth']
