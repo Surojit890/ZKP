@@ -89,11 +89,11 @@
         function testCDN(url, name) {
             return fetch(url, { method: 'HEAD', mode: 'no-cors' })
                 .then(() => {
-                    log(`✓ ${name} is reachable`, 'success');
+                    log(`${name} is reachable`, 'success');
                     return true;
                 })
                 .catch(() => {
-                    log(`✗ ${name} is NOT reachable`, 'error');
+                    log(` ${name} is NOT reachable`, 'error');
                     return false;
                 });
         }
@@ -107,7 +107,7 @@
                 
                 // Wait for sodium
                 log('Waiting for sodium to load...');
-                document.getElementById('network-status').innerHTML = '<span class="success">✓ Network OK</span>';
+                document.getElementById('network-status').innerHTML = '<span class="success">Network OK</span>';
                 
                 let attempts = 0;
                 while (!window.sodium && attempts < 100) {
@@ -117,13 +117,13 @@
                 }
                 
                 if (window.sodium) {
-                    log('✓ sodium object found!', 'success');
-                    document.getElementById('sodium-status').innerHTML = '<span class="success">✓ libsodium loaded</span>';
+                    log('sodium object found!', 'success');
+                    document.getElementById('sodium-status').innerHTML = '<span class="success">libsodium loaded</span>';
                     
                     // Wait for ready
                     log('Waiting for sodium.ready...');
                     await sodium.ready;
-                    log('✓ sodium.ready resolved', 'success');
+                    log('sodium.ready resolved', 'success');
                     
                     // Check functions
                     const functions = [
@@ -137,26 +137,26 @@
                     let allOk = true;
                     for (const func of functions) {
                         if (typeof sodium[func] === 'function') {
-                            log(`✓ sodium.${func}() available`, 'success');
+                            log(`sodium.${func}() available`, 'success');
                         } else {
-                            log(`✗ sodium.${func}() NOT available`, 'error');
+                            log(` sodium.${func}() NOT available`, 'error');
                             allOk = false;
                         }
                     }
                     
                     if (allOk) {
-                        document.getElementById('crypto-status').innerHTML = '<span class="success">✓ All crypto functions available</span>';
+                        document.getElementById('crypto-status').innerHTML = '<span class="success">All crypto functions available</span>';
                         log('========================================', 'success');
-                        log('✓ All tests passed! System is ready.', 'success');
+                        log('All tests passed! System is ready.', 'success');
                         log('========================================', 'success');
                     }
                 } else {
-                    log('✗ sodium failed to load after 10 seconds', 'error');
-                    document.getElementById('sodium-status').innerHTML = '<span class="error">✗ libsodium failed to load</span>';
+                    log(' sodium failed to load after 10 seconds', 'error');
+                    document.getElementById('sodium-status').innerHTML = '<span class="error"> libsodium failed to load</span>';
                 }
             } catch (err) {
-                log(`✗ Error: ${err.message}`, 'error');
-                document.getElementById('crypto-status').innerHTML = '<span class="error">✗ Error during testing</span>';
+                log(` Error: ${err.message}`, 'error');
+                document.getElementById('crypto-status').innerHTML = '<span class="error"> Error during testing</span>';
             }
         }
         

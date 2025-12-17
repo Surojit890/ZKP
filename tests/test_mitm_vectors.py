@@ -316,6 +316,7 @@ class MITMTestSuite:
             )
             
             original_response = user_response.text
+            # Store the original response before any potential MITM tampering for comparison
             print(f"  Original response: {original_response}")
             
             # Simulate MITM injection of XSS payload
