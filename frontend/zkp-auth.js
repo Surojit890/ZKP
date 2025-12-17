@@ -28,7 +28,7 @@
     // ----------------------------
     // UI helpers
     // ----------------------------
-    function showTab(tabId) {
+    function showTab(tabId, options = {}) {
         dom.tabContent().forEach(tab => tab.classList.remove('active'));
         dom.navButtons().forEach(btn => btn.classList.remove('active'));
 
@@ -38,6 +38,18 @@
         const statusEl = dom.status();
         statusEl.textContent = '';
         statusEl.className = 'status-message';
+
+        const syncLogs = options.syncLogs !== false;
+        if (syncLogs && typeof window.showLogTab === 'function') {
+            if (!window.__tabSyncGuard) {
+                window.__tabSyncGuard = true;
+                try {
+                    window.showLogTab(tabId, { syncAuth: false });
+                } finally {
+                    window.__tabSyncGuard = false;
+                }
+            }
+        }
     }
 
     function showStatus(message, type = 'info') {
@@ -46,15 +58,19 @@
         statusEl.className = `status-message ${type}`;
     }
 
-    function debug(area, message) {
+    function debug(area, message, level = 'info') {
         const debugEl = dom.debugArea(area);
         if (debugEl) {
             const line = document.createElement('div');
+            line.classList.add('log-line');
+            if (level) {
+                line.classList.add(level);
+            }
             line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             debugEl.appendChild(line);
             debugEl.scrollTop = debugEl.scrollHeight;
         }
-        console.log(`[${area}] ${message}`);
+        console.log(`[${area}] ${level}: ${message}`);
     }
 
     // ----------------------------
@@ -189,19 +205,20 @@
 
         if (password !== confirm) {
             showStatus('Passwords do not match', 'error');
+            debug('register', 'Registration failed: passwords do not match', 'error');
             return;
         }
 
         try {
             showStatus('Generating keys...', 'info');
-            debug('register', 'Deriving private key...');
+            debug('register', 'Deriving private key...', 'info');
 
             const s = requireSodium();
             const privateKey = await derivePrivateKey(username, password);
 
             const keyPair = s.crypto_sign_seed_keypair(privateKey);
             const publicKey = s.to_hex(keyPair.publicKey);
-            debug('register', `Public Key: ${publicKey.substring(0, 16)}...`);
+            debug('register', `Public Key: ${publicKey.substring(0, 16)}...`, 'info');
 
             const { response, data } = await postJson('/api/register', {
                 username: username,
@@ -210,14 +227,18 @@
 
             if (response.ok) {
                 showStatus('Registration successful! You can now login.', 'success');
+                debug('register', 'Registration successful.', 'success');
                 form.reset();
                 setTimeout(() => showTab('login'), 1500);
             } else {
-                showStatus(`Registration failed: ${data?.error}`, 'error');
+                const reason = data?.error || `HTTP ${response.status}`;
+                showStatus(`Registration failed: ${reason}`, 'error');
+                debug('register', `Registration failed: ${reason}`, 'error');
             }
         } catch (e) {
             console.error(e);
             showStatus(`Error: ${e.message}`, 'error');
+            debug('register', `Error: ${e.message}`, 'error');
         }
     }
 
@@ -230,21 +251,23 @@
 
         try {
             showStatus('Starting authentication...', 'info');
-            debug('login', 'Requesting challenge...');
+            debug('login', 'Requesting challenge...', 'info');
 
             const { response: challengeRes, data: challengeData } = await postJson('/api/auth/challenge', { username });
             if (!challengeRes.ok) {
-                throw new Error(challengeData?.error || 'Failed to get challenge');
+                const reason = challengeData?.error || `HTTP ${challengeRes.status}`;
+                debug('login', `Challenge request failed: ${reason}`, 'error');
+                throw new Error(reason);
             }
 
             const challengeHex = challengeData.challenge;
-            debug('login', `Challenge: ${challengeHex.substring(0, 16)}...`);
+            debug('login', `Challenge: ${challengeHex.substring(0, 16)}...`, 'info');
 
-            debug('login', 'Computing Zero-Knowledge Proof...');
+            debug('login', 'Computing Zero-Knowledge Proof...', 'info');
             const privateKey = await derivePrivateKey(username, password);
             const { Vhex, rHex } = computeProof(privateKey, challengeHex);
 
-            debug('login', 'Proof computed. Sending to server...');
+            debug('login', 'Proof computed. Sending to server...', 'info');
             const { response: verifyRes, data: verifyData } = await postJson('/api/auth/verify', {
                 username: username,
                 V: Vhex,
@@ -254,13 +277,19 @@
 
             if (verifyRes.ok) {
                 showStatus('Authentication Successful!', 'success');
-                debug('login', `Session Token: ${verifyData.session_token.substring(0, 16)}...`);
+                debug('login', 'Authentication successful.', 'success');
+                if (verifyData?.session_token) {
+                    debug('login', `Session Token: ${verifyData.session_token.substring(0, 16)}...`, 'success');
+                }
             } else {
-                showStatus(`Authentication Failed: ${verifyData?.error}`, 'error');
+                const reason = verifyData?.error || `HTTP ${verifyRes.status}`;
+                showStatus(`Authentication Failed: ${reason}`, 'error');
+                debug('login', `Authentication failed: ${reason}`, 'error');
             }
         } catch (e) {
             console.error(e);
             showStatus(`Error: ${e.message}`, 'error');
+            debug('login', `Error: ${e.message}`, 'error');
         }
     }
 
